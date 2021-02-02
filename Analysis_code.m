@@ -6,7 +6,7 @@
 %% for savings of the figure set a variable filename= "path where you want to save your figures" and create a folder called figures
 %% name_groups (identifyer of each individual experimental group, colorur (color id for each experimental group, used for plotting)
 %% i.e. name_groups={'control', 'trained', 'sham'}; colour={'k','r','m'}
-%% rule_change = session at which you iiver the learning rule, if you do not set it to 'NO'
+%% rule_change = session at which you invert the learning rule, if you do not, set it to 'NO'
 time_bin=120000;%2 minutes time bin
 base_time=1800000;%take into account only the last 30 minutes of the baseline 
 %%CODE IMPLEMENTATION
