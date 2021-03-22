@@ -33,16 +33,16 @@ V(1,gr)={V_vector(:,animal_to_select)};
 end
 
 %%
-time_bin=5; %in minutes
+time_window=5; %in minutes
 min_size_bin=100;%%min number of frames in a time bin (use usually half the frames in a timebin)
 for gr=1:max(size(X))
 X_vector=[];Y_vector=[];D_vector=[];info_vector=[];V_vector=[];V_vector=V{1,gr};
 X_vector=X{1,gr};Y_vector=Y{1,gr};D_vector=D{1,gr};info_vector=info{1,gr};
-[xNew{gr},yNew{gr},dNew{gr},heatmaps{gr},vNew{gr}]=get_time_bins(X_vector,Y_vector,D_vector,V_vector,time_bin,info_vector,min_size_bin);
+[xNew{gr},yNew{gr},dNew{gr},heatmaps{gr},vNew{gr}]=get_time_bins(X_vector,Y_vector,D_vector,V_vector,time_window,info_vector,min_size_bin);
 end
 %%
 figure();
-titles=["time of entrance","number of entrance","v of entrance"];
+titles=["average_time of entrance","number of entrance","v of entrance"];
 baseline_shift=6;%the first 5 bins of baseline are negletted
 baseline_bins=baseline_shift+[1:6];%i am using a 5 min binn and selection only the last 30 min of the baseline 
 for gr=1:max(size(X))
