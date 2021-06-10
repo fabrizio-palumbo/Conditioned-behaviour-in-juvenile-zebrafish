@@ -312,14 +312,13 @@ end
 
 %%
 days_num=1;%you can perform it for multiple days experiments if that is the case 
-divide_window=1;%set the number of windows in which you want to divide your protocol sessions
+division_in_time=1;%set the number of windows in which you want to divide your protocol sessions
 for windows_to_analyze=1:divide_window
 fig1=figure();
 clearvars V_raw_all V_raw;
 switch_rule=rule_change;
 timeWindow=15; %number of frames to take into account for the calculation of the average velocity before and after encountering the midline.
 variability_threshold=2;%%number of pixel the annimal needs to be next to the midline to be considered as an encounter
-division_in_time=1;
 
 time_block=windows_to_analyze;
 for gr=1:max(size(X))
@@ -392,7 +391,7 @@ end
 %%blue dots are aproaching angles (radius = mean velocity of approach)
 %%red dots are "escaping" angles (radius = mean velocity of approach)
 %%The line represent the circular mean value
-for session_windowed=1:divide_window
+for session_windowed=1:division_in_time
     tt=1;
     for ses=1:block_num
         figA=figure();
