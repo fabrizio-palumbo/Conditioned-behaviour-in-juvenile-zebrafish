@@ -401,7 +401,7 @@ for session_windowed=1:divide_window
             ctemp=[];ctemp=Angles_avoidance{gr,session_windowed};
             A=[];    C=[];    T=[];
             num=0;  DIR_vector=[];
-            name_fig=[' mean escape strategy in session ',num2str(ses)];
+            name_fig=[' mean escape strategy in session ',num2str(ses), ' window ' ,num2str(session_windowed)];
             subplot(max(size(GROUPS)),1,gr);
             frequency=zeros(size(ctemp,2),2);
             for fishN=1:size(ctemp,2)
