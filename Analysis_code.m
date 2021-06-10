@@ -166,7 +166,7 @@ end
 %% Velocity plotting
 fig1=figure();name_fig1=[];name_fig1=['binned velocity plot individuals'];
 fig2=figure();name_fig2=[];name_fig2=['binned velocity plot all'];
-fig3=figure();
+fig3=figure();name_fig3=[];name_fig3=['total distance swimmed'];
 fig4=figure();name_fig4=[];name_fig4=['freezing'];
 fig5=figure();
 fig6=figure(); 
