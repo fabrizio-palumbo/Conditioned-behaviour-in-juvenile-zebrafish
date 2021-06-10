@@ -313,7 +313,7 @@ end
 %%
 days_num=1;%you can perform it for multiple days experiments if that is the case 
 division_in_time=1;%set the number of windows in which you want to divide your protocol sessions
-for windows_to_analyze=1:divide_window
+for windows_to_analyze=1:division_in_time
 fig1=figure();
 clearvars V_raw_all V_raw;
 switch_rule=rule_change;
