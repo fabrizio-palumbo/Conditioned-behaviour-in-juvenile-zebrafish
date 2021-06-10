@@ -1855,3 +1855,16 @@ if nargout > 1
   ll = mu - t;
 end
 end
+
+function []=plot_heat_map(pdf_mean,y,x,z)
+
+for i=1:size(pdf_mean,1)
+subplot(z,x,i+(x*(y-1)))
+imagesc(pdf_mean{i,1})
+colormap jet 
+caxis ([0 0.005])
+sum(sum(pdf_mean{i,1}))
+axis off
+end
+
+end
