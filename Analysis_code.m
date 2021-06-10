@@ -85,7 +85,7 @@ pdf_vector=[]; X_vector=[];Y_vector=[]; D_vector=[];  info_vector=[];V_vector=[]
 pdf_vector=heatmaps{1,gr}; X_vector=X{1,gr};Y_vector=Y{1,gr}; D_vector=D{1,gr};  info_vector=info{1,gr}; V_vector=V{1,gr};
 name=['heat_maps_plot_average',name_groups{gr}]
 figure(B)
-PDF_mean=plot_heat_maps_averaged([pdf_vector(2:end,:)]);
+PDF_mean=plot_heat_maps_averaged([pdf_vector(2:end,:)]); % the first windows is discarded since the animal is habitutating to the arena
 plot_heat_map(PDF_mean,(gr),block_num,max(size(X)));%
 saveas(B,[filename,'figures\',name,'.fig']);saveas(B,[filename,'figures\',name,'.tif']);saveas(B,[filename,'figures\',name,'.svg']); 
 counts=0;add=0;A=figure();figure(A)
