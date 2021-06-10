@@ -38,7 +38,7 @@ min_size_bin=100;%%min number of frames in a time bin (use usually half the fram
 for gr=1:max(size(X))
 X_vector=[];Y_vector=[];D_vector=[];info_vector=[];V_vector=[];V_vector=V{1,gr};
 X_vector=X{1,gr};Y_vector=Y{1,gr};D_vector=D{1,gr};info_vector=info{1,gr};
-[xNew{gr},yNew{gr},dNew{gr},heatmaps{gr},vNew{gr}]=get_time_bins(X_vector,Y_vector,D_vector,V_vector,time_window,info_vector,min_size_bin);
+[xNew{gr},yNew{gr},dNew{gr},~,vNew{gr}]=get_time_bins(X_vector,Y_vector,D_vector,V_vector,time_window,info_vector,min_size_bin);
 end
 %%
 figure();
@@ -78,6 +78,15 @@ end
 end
 %%
 %% save averaged and individual heatmaps of exploration patterns, we use the binned time setted above line 33 
+% this is used for different binning size of the heatmaps
+time_window=30; %in minutes
+min_size_bin=100;%%min number of frames in a time bin (use usually half the frames in a timebin)
+for gr=1:max(size(X))
+X_vector=[];Y_vector=[];D_vector=[];info_vector=[];V_vector=[];V_vector=V{1,gr};
+X_vector=X{1,gr};Y_vector=Y{1,gr};D_vector=D{1,gr};info_vector=info{1,gr};
+[~,~,~,heatmaps{gr},~]=get_time_bins(X_vector,Y_vector,D_vector,V_vector,time_window,info_vector,min_size_bin);
+end
+%%
 sz=get(0,'MonitorPositions');
 B=figure();
 for gr=1:max(size(X))
