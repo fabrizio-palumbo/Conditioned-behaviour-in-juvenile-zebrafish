@@ -384,7 +384,7 @@ hold on
 ylim([-0.2 5])
 title(['session number : ', num2str(conditioning_session), '; ' , name_groups{gr}])
 end
-suptitle(name_fig1); hold on
+sgtitle(name_fig1); hold on
 name=[];name=name_fig1;
 saveas(fig1,[filename,name,'.fig']);saveas(fig1,[filename,name,'.tif']);saveas(fig1,[filename,name,'.svg']); 
 end
