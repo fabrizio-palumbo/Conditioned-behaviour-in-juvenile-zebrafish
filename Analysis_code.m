@@ -10,6 +10,7 @@
 time_bin=120000;%2 minutes time bin
 base_time=1800000;%take into account only the last 30 minutes of the baseline 
 %%CODE IMPLEMENTATION
+%%
 %%Learning index calculation
 switch_rule=rule_change;
 for gr=1:max(size(X))
@@ -19,7 +20,7 @@ for gr=1:max(size(X))
 end
 %%
 %%if you want to select only animals with a positive learning index
-session_of_interest=5; % session in which you want to refer to for the learning index
+session_of_interest=4; % session in which you want to refer to for the learning index
 for gr=1:max(size(X))
     LI= Learning_index{gr}(session_of_interest,:);
     animal_to_select=[];animal_to_select=find(LI>0);
@@ -33,7 +34,7 @@ V(1,gr)={V_vector(:,animal_to_select)};
 end
 
 %%
-time_window=5; %in minutes
+time_window=30; %in minutes
 min_size_bin=100;%%min number of frames in a time bin (use usually half the frames in a timebin)
 for gr=1:max(size(X))
 X_vector=[];Y_vector=[];D_vector=[];info_vector=[];V_vector=[];V_vector=V{1,gr};
@@ -68,7 +69,7 @@ Hval(gr)={H};
 hold on, title(titles(t))
 end
 end
-num_of_sessions=5;bins_per_session=6;
+num_of_sessions=block_num;bins_per_session=6;
 for u=[1,3,4]
 for pv=1:num_of_sessions
     A=[];A=GR_IT{1,u}(((pv-1)*bins_per_session)+1:pv*bins_per_session,:);
@@ -77,16 +78,16 @@ for pv=1:num_of_sessions
 end
 end
 %%
-%% save averaged and individual heatmaps of exploration patterns, we use the binned time setted above line 33 
-% this is used for different binning size of the heatmaps
-time_window=30; %in minutes
+
+%%
+time_window=30; %in minutes we want the hetmaps to have a longer averaged time!
 min_size_bin=100;%%min number of frames in a time bin (use usually half the frames in a timebin)
 for gr=1:max(size(X))
 X_vector=[];Y_vector=[];D_vector=[];info_vector=[];V_vector=[];V_vector=V{1,gr};
 X_vector=X{1,gr};Y_vector=Y{1,gr};D_vector=D{1,gr};info_vector=info{1,gr};
 [~,~,~,heatmaps{gr},~]=get_time_bins(X_vector,Y_vector,D_vector,V_vector,time_window,info_vector,min_size_bin);
 end
-%%
+%% save averaged and individual heatmaps of exploration patterns, we use the binned time setted above line 33 
 sz=get(0,'MonitorPositions');
 B=figure();
 for gr=1:max(size(X))
@@ -94,7 +95,7 @@ pdf_vector=[]; X_vector=[];Y_vector=[]; D_vector=[];  info_vector=[];V_vector=[]
 pdf_vector=heatmaps{1,gr}; X_vector=X{1,gr};Y_vector=Y{1,gr}; D_vector=D{1,gr};  info_vector=info{1,gr}; V_vector=V{1,gr};
 name=['heat_maps_plot_average',name_groups{gr}]
 figure(B)
-PDF_mean=plot_heat_maps_averaged([pdf_vector(2:end,:)]); % the first windows is discarded since the animal is habitutating to the arena
+PDF_mean=plot_heat_maps_averaged([pdf_vector(2:end,:)]);
 plot_heat_map(PDF_mean,(gr),block_num,max(size(X)));%
 saveas(B,[filename,'figures\',name,'.fig']);saveas(B,[filename,'figures\',name,'.tif']);saveas(B,[filename,'figures\',name,'.svg']); 
 counts=0;add=0;A=figure();figure(A)
@@ -311,87 +312,167 @@ end
 end
 
 %%
-days_num=1;%you can perform it for multiple days experiments if that is the case 
+%%we now calculate the response of the animal to the stimulation
+days_num=1;%you can perform it for multiple days experiments if that is the case
 division_in_time=1;%set the number of windows in which you want to divide your protocol sessions
 for windows_to_analyze=1:division_in_time
-fig1=figure();
-clearvars V_raw_all V_raw;
-switch_rule=rule_change;
-timeWindow=15; %number of frames to take into account for the calculation of the average velocity before and after encountering the midline.
-variability_threshold=2;%%number of pixel the annimal needs to be next to the midline to be considered as an encounter
-
-time_block=windows_to_analyze;
-for gr=1:max(size(X))
-X_vector=[];Y_vector=[]; D_vector=[];  info_vector=[]; V_vector=[];
-X_vector=X{1,gr};Y_vector=Y{1,gr};D_vector=D{1,gr};info_vector=info{1,gr};V_vector=V{1,gr};   
-name_fig1=[];name_fig1=['velocity before and after stimulus'];
-
-V1=[];V_raw=[];Peaks=[];Mean_peaks=[];BASE=[];BASE_raw=[];PRE_Peak_response=[];POST_peak_response=[];
-[Angles,Vel,V_raw,Peaks,Mean_peaks,BASE,BASE_raw,PRE_Peak_response,POST_peak_response]=plot_response_to_only_shock_normalized(V_vector,X_vector,Y_vector,info_vector,timeWindow,switch_rule,timeWindow,variability_threshold,division_in_time,time_block);
-V_response_to_shock(1,gr)={PRE_Peak_response};
-V_response_to_shock(2,gr)={POST_peak_response};
-Angles_avoidance(gr,windows_to_analyze)={Angles};
-V_vector1=[];
-BASE(cellfun('isempty',BASE))={(-0.1).*ones(1,timeWindow)}; %a value of -0.1 is set if the animal never encounts the midline
-Vel(cellfun('isempty',V))={(-0.1).*ones(1,timeWindow)};
-V_raw(cellfun('isempty',V_raw))={(-0.1).*ones(1,timeWindow)};
-BASE_raw(cellfun('isempty',BASE_raw))={(-0.1).*ones(1,timeWindow)};
-V_raw_single_fish(gr)={V_raw};
-Base_raw_single_fish(gr)={BASE_raw};
-for temp1=1:size(V_raw,1)
-    for  temp2=1:size(V_raw,2)
-       if(temp2==1)
-        V_raw_all(gr,temp1)={[V_raw{temp1,temp2}]};  
-        BASE_raw_all(gr,temp1)={[BASE_raw{temp1,temp2}]}; 
-       else
-        V_raw_all(gr,temp1)={ vertcat(V_raw_all{gr,temp1},V_raw{temp1,temp2})};
-                BASE_raw_all(gr,temp1)={ vertcat(BASE_raw_all{gr,temp1},BASE_raw{temp1,temp2})};
-       end
+    fig1=figure();
+    clearvars V_raw_all V_raw;
+    switch_rule=rule_change;
+    timeWindow=80; %number of frames to take into account for the calculation of the average velocity before and after encountering the midline.
+    variability_threshold=0;%%number of pixel the annimal needs to be next to the midline to be considered as an encounter
+    time_block=windows_to_analyze;
+    for gr=1:max(size(X))
+        X_vector=[];Y_vector=[]; D_vector=[];  info_vector=[]; V_vector=[];
+        X_vector=X{1,gr};Y_vector=Y{1,gr};D_vector=D{1,gr};info_vector=info{1,gr};V_vector=V{1,gr};
+        name_fig1=[];name_fig1=['velocity before and after stimulus'];
+        
+        V1=[];V_raw=[];Peaks=[];Mean_peaks=[];BASE=[];BASE_raw=[];PRE_Peak_response=[];POST_peak_response=[];
+        [Angles,Vel,V_raw,Peaks,Mean_peaks,BASE,BASE_raw,PRE_Peak_response,POST_peak_response]=plot_response_to_only_shock_normalized(V_vector,X_vector,Y_vector,info_vector,timeWindow,switch_rule,timeWindow,variability_threshold,division_in_time,time_block);
+        V_response_to_shock(1,gr)={PRE_Peak_response};
+        V_response_to_shock(2,gr)={POST_peak_response};
+        Angles_avoidance(gr,windows_to_analyze)={Angles};
+        V_vector1=[];
+        BASE(cellfun('isempty',BASE))={(-0.1).*ones(1,timeWindow)}; %a value of -0.1 is set if the animal never encounts the midline
+        Vel(cellfun('isempty',V))={(-0.1).*ones(1,timeWindow)};
+        V_raw(cellfun('isempty',V_raw))={(-0.1).*ones(1,timeWindow)};
+        BASE_raw(cellfun('isempty',BASE_raw))={(-0.1).*ones(1,timeWindow)};
+        V_raw_single_fish(gr)={V_raw};
+        Base_raw_single_fish(gr)={BASE_raw};
+        for temp1=1:size(V_raw,1)
+            for  temp2=1:size(V_raw,2)
+                if(temp2==1)
+                    V_raw_all(gr,temp1)={[V_raw{temp1,temp2}]};
+                    BASE_raw_all(gr,temp1)={[BASE_raw{temp1,temp2}]};
+                else
+                    V_raw_all(gr,temp1)={ vertcat(V_raw_all{gr,temp1},V_raw{temp1,temp2})};
+                    BASE_raw_all(gr,temp1)={ vertcat(BASE_raw_all{gr,temp1},BASE_raw{temp1,temp2})};
+                end
+            end
+        end
+        figure(fig1)
+        subplot(1,max(size(X)),gr)
+        TO_PLOT=[];ones_to_plot=[];counters=1;
+        for counting=conditioning_session
+            TO_PLOT=[TO_PLOT;PRE_Peak_response(counting,:);POST_peak_response(counting,:)];
+            ones_to_plot=[ones_to_plot;ones(1,size(PRE_Peak_response(counting,:),2)).*counters];
+            counters=counters+1;
+            ones_to_plot=[ones_to_plot;ones(1,size(POST_peak_response(counting,:),2)).*counters];
+            counters=counters+1;
+            Atemp=[];Btemp=[];
+            Atemp=PRE_Peak_response(counting,:);
+            Btemp=POST_peak_response(counting,:);
+            [ h(gr,counting,days_num),p(gr,counting,days_num)] = signrank(Atemp(Atemp~=-0.1),Btemp(Btemp~=-0.1));
+        end
+        %if you have more than 2 conditionign sessions you need to adjust this plot accordingly to your necessities
+        boxplot(TO_PLOT')
+        hold on
+        scatter (ones_to_plot(:),TO_PLOT(:));
+        hold on
+        primo_plot=[];
+        second_plot=[];
+        first_plot=[];
+        sec_plot=[];
+        primo_plot=ones_to_plot(1:2,:);
+        second_plot=ones_to_plot(3:4,:);
+        first_plot=TO_PLOT(1:2,:);
+        sec_plot=TO_PLOT(3:4,:);
+        plot(primo_plot,first_plot)
+        hold on
+        plot(second_plot,sec_plot)
+        hold on
+        ylim([-0.2 5])
+        title(['session number : ', num2str(conditioning_session), '; ' , name_groups{gr}])
     end
+    sgtitle(name_fig1); hold on
+    name=[];name=name_fig1;
+    saveas(fig1,[filename,name,'.fig']);saveas(fig1,[filename,name,'.tif']);saveas(fig1,[filename,name,'.svg']);
 end
-figure(fig1)
-subplot(max(size(GROUPS)),1,gr)
-TO_PLOT=[];ones_to_plot=[];counters=1;
-for counting=conditioning_session
-    TO_PLOT=[TO_PLOT;PRE_Peak_response(counting,:);POST_peak_response(counting,:)];
-    ones_to_plot=[ones_to_plot;ones(1,size(PRE_Peak_response(counting,:),2)).*counters];
-    counters=counters+1;
-        ones_to_plot=[ones_to_plot;ones(1,size(POST_peak_response(counting,:),2)).*counters];
-        counters=counters+1;
-        Atemp=[];Btemp=[];
-       Atemp=PRE_Peak_response(counting,:);
-       Btemp=POST_peak_response(counting,:);
-        [ h(gr,counting,days_num),p(gr,counting,days_num)] = signrank(Atemp(Atemp~=-0.1),Btemp(Btemp~=-0.1));
-end
-%if you have more than 2 conditionign sessions you need to adjust this plot accordingly to your necessities
-boxplot(TO_PLOT')
-hold on 
-scatter (ones_to_plot(:),TO_PLOT(:));
-hold on
-primo_plot=[];
-second_plot=[];
-first_plot=[];
-sec_plot=[];
-primo_plot=ones_to_plot(1:2,:);
-second_plot=ones_to_plot(3:4,:);
-first_plot=TO_PLOT(1:2,:);
-sec_plot=TO_PLOT(3:4,:);
-plot(primo_plot,first_plot)
-hold on 
-plot(second_plot,sec_plot)
-hold on 
-ylim([-0.2 5])
-title(['session number : ', num2str(conditioning_session), '; ' , name_groups{gr}])
-end
-sgtitle(name_fig1); hold on
-name=[];name=name_fig1;
-saveas(fig1,[filename,name,'.fig']);saveas(fig1,[filename,name,'.tif']);saveas(fig1,[filename,name,'.svg']); 
+%%
+%%
+%%Now we calculate the response of the animal to the encounter of the
+%%boundary of the arena(safe vs danger)
+days_num=1;%you can perform it for multiple days experiments if that is the case
+division_in_time=6;%set the number of windows in which you want to divide your protocol sessions
+for windows_to_analyze=1:division_in_time
+    fig1=figure();
+    clearvars V_raw_all V_raw;
+    switch_rule=rule_change;
+    timeWindow=80; %number of frames to take into account for the calculation of the average velocity before and after encountering the midline.
+    variability_threshold=0;%%number of pixel the annimal needs to be next to the midline to be considered as an encounter
+    time_block=windows_to_analyze;
+    for gr=1:max(size(X))
+        X_vector=[];Y_vector=[]; D_vector=[];  info_vector=[]; V_vector=[];
+        X_vector=X{1,gr};Y_vector=Y{1,gr};D_vector=D{1,gr};info_vector=info{1,gr};V_vector=V{1,gr};
+        name_fig1=[];name_fig1=['velocity before and after stimulus'];
+        
+        V1=[];V_raw=[];Peaks=[];Mean_peaks=[];BASE=[];BASE_raw=[];PRE_Peak_response=[];POST_peak_response=[];
+        [Angles,Vel,V_raw,Peaks,Mean_peaks,BASE,BASE_raw,PRE_Peak_response,POST_peak_response]=plot_avoidance_of_shock(V_vector,X_vector,Y_vector,info_vector,timeWindow,switch_rule,timeWindow,variability_threshold,division_in_time,time_block);
+        V_response_to_shock(1,gr)={PRE_Peak_response};
+        V_response_to_shock(2,gr)={POST_peak_response};
+        Angles_avoidance(gr,windows_to_analyze)={Angles};
+        V_vector1=[];
+        BASE(cellfun('isempty',BASE))={(-0.1).*ones(1,timeWindow)}; %a value of -0.1 is set if the animal never encounts the midline
+        Vel(cellfun('isempty',V))={(-0.1).*ones(1,timeWindow)};
+        V_raw(cellfun('isempty',V_raw))={(-0.1).*ones(1,timeWindow)};
+        BASE_raw(cellfun('isempty',BASE_raw))={(-0.1).*ones(1,timeWindow)};
+        V_raw_single_fish(gr)={V_raw};
+        Base_raw_single_fish(gr)={BASE_raw};
+        for temp1=1:size(V_raw,1)
+            for  temp2=1:size(V_raw,2)
+                if(temp2==1)
+                    V_raw_all(gr,temp1)={[V_raw{temp1,temp2}]};
+                    BASE_raw_all(gr,temp1)={[BASE_raw{temp1,temp2}]};
+                else
+                    V_raw_all(gr,temp1)={ vertcat(V_raw_all{gr,temp1},V_raw{temp1,temp2})};
+                    BASE_raw_all(gr,temp1)={ vertcat(BASE_raw_all{gr,temp1},BASE_raw{temp1,temp2})};
+                end
+            end
+        end
+        figure(fig1)
+        subplot(1,max(size(X)),gr)
+        TO_PLOT=[];ones_to_plot=[];counters=1;
+        for counting=conditioning_session
+            TO_PLOT=[TO_PLOT;PRE_Peak_response(counting,:);POST_peak_response(counting,:)];
+            ones_to_plot=[ones_to_plot;ones(1,size(PRE_Peak_response(counting,:),2)).*counters];
+            counters=counters+1;
+            ones_to_plot=[ones_to_plot;ones(1,size(POST_peak_response(counting,:),2)).*counters];
+            counters=counters+1;
+            Atemp=[];Btemp=[];
+            Atemp=PRE_Peak_response(counting,:);
+            Btemp=POST_peak_response(counting,:);
+            [ h(gr,counting,days_num),p(gr,counting,days_num)] = signrank(Atemp(Atemp~=-0.1),Btemp(Btemp~=-0.1));
+        end
+        %if you have more than 2 conditionign sessions you need to adjust this plot accordingly to your necessities
+        boxplot(TO_PLOT')
+        hold on
+        scatter (ones_to_plot(:),TO_PLOT(:));
+        hold on
+        primo_plot=[];
+        second_plot=[];
+        first_plot=[];
+        sec_plot=[];
+        primo_plot=ones_to_plot(1:2,:);
+        second_plot=ones_to_plot(3:4,:);
+        first_plot=TO_PLOT(1:2,:);
+        sec_plot=TO_PLOT(3:4,:);
+        plot(primo_plot,first_plot)
+        hold on
+        plot(second_plot,sec_plot)
+        hold on
+        ylim([-0.2 5])
+        title(['session number : ', num2str(conditioning_session), '; ' , name_groups{gr}])
+    end
+    sgtitle(name_fig1); hold on
+    name=[];name=name_fig1;
+    saveas(fig1,[filename,name,'.fig']);saveas(fig1,[filename,name,'.tif']);saveas(fig1,[filename,name,'.svg']);
 end
 %%
 %%blue dots are aproaching angles (radius = mean velocity of approach)
 %%red dots are "escaping" angles (radius = mean velocity of approach)
 %%The line represent the circular mean value
-for session_windowed=1:division_in_time
+divide_window=division_in_time;%set the number of windows in which you want to divide your protocol sessions
+for session_windowed=1:divide_window
     tt=1;
     for ses=1:block_num
         figA=figure();
@@ -400,7 +481,7 @@ for session_windowed=1:division_in_time
             ctemp=[];ctemp=Angles_avoidance{gr,session_windowed};
             A=[];    C=[];    T=[];
             num=0;  DIR_vector=[];
-            name_fig=[' mean escape strategy in session ',num2str(ses), ' window ' ,num2str(session_windowed)];
+            name_fig=[' mean escape strategy in session ',num2str(ses),' window ' ,num2str(session_windowed)];
             subplot(max(size(GROUPS)),1,gr);
             frequency=zeros(size(ctemp,2),2);
             for fishN=1:size(ctemp,2)
@@ -957,6 +1038,19 @@ for i=  1:size(PDF,1)
     end 
     PDF_MEAN(i,1)={mean(pdf(1:end,1:end,:),3)}; 
 end
+end
+
+function []=plot_heat_map(pdf_mean,y,x,z)
+
+for i=1:size(pdf_mean,1)
+subplot(z,x,i+(x*(y-1)))
+imagesc(pdf_mean{i,1})
+colormap jet 
+caxis ([0 0.005])
+sum(sum(pdf_mean{i,1}))
+axis off
+end
+
 end
 function [Binned_time]=new_binned_plot_with_flipping_color(X,Y,D,info_vector,color,time_bin,base_time,Flip_time)
 for i=1:size(X,2)
@@ -1576,11 +1670,16 @@ for i=1:size(X,2)
         line=1;
         x=[];y=[];v=[];
         x=X{j,i};
-        x=x(((end/division_in_time)*(time_block-1))+1:((end/division_in_time)*(time_block)));
+       if (j==1 && size(x,2)>28000)%% this is a control for the time division of the session which in our case were 30 min long
+            x=x(27000:end);
+            y=y(27000:end);
+            v=v(27000:end);
+       end
+       x=x(((end/division_in_time)*(time_block-1))+1:((end/division_in_time)*(time_block)));
         v=V_input{j,i};
         y=Y{j,i};
         if( 1~=(strcmp(switch_rule,'NO')))
-            if(j>=switch_rule && size(info,2)==4 )
+            if(j>=switch_rule && size(info,1)==4 )
                 if(isempty(info{4,i}))
                     tresh=info{3,i}-variability_threshold;
                 else
@@ -1593,11 +1692,7 @@ for i=1:size(X,2)
         else
             tresh=info{3,i}+variability_threshold;
         end
-        if (j==1 && size(x,2)>28000)%% this is a control for the time division of the session which in our case were 30 min long
-            x=x(27000:end);
-            y=y(27000:end);
-            v=v(27000:end);
-        end
+        
         count=window;
         A=[];
         B=[];
@@ -1652,7 +1747,7 @@ for i=1:size(X,2)
                             line=line+1;
                         end
                     else
-                        if (x(t)>tresh && x(t-internal_window)<tresh && x(t+internal_window)>tresh)
+                        if (x(t)>tresh && x(t-internal_window)<tresh )
                             count=t+window-1;
                             A(line,1:window)=v(t:t+window-1);
                             if(t>window)
@@ -1701,6 +1796,261 @@ for i=1:size(X,2)
                     end
                 else
                     if (x(t)<tresh && x(t-internal_window)>tresh && x(t+internal_window)<tresh)
+                        count=t+window-1;
+                        A(line,1:window)=v(t:t+window-1);
+                        if(t>window )
+                            HYP=[];CAT1=[];CAT2=[];
+                            CAT1=x(t+window)-x(t);
+                            CAT2=y(t+window)-y(t);
+                            HYP=sqrt(CAT1.^2+CAT2.^2);
+                            angles(line,8)=x(t);
+                            angles(line,9)=x(t+window);
+                            angles(line,10)=y(t);
+                            angles(line,11)=y(t+window);
+                            angles(line,12)=mean(mean(v(t:(t+window))));
+                            t+window
+                            if(HYP==0)
+                                angles(line,7)=361;
+                                angles(line,12)=-0.1;
+                            else
+                                if(rad2deg(asin(CAT2/HYP))>=0)
+                                    angles(line,7)= ( rad2deg(acos(CAT1/HYP)));%post crossing thresh angle
+                                else
+                                    angles(line,7)= 360+(-( rad2deg(acos(CAT1/HYP))));%post crossing thresh angle
+                                end
+                            end
+                            HYP=[];CAT1=[];CAT2=[];
+                            CAT1=x(t)-x(t-window);
+                            CAT2=y(t)-y(t-window);
+                            HYP=sqrt(CAT1.^2+CAT2.^2);
+                            angles(line,2)=x(t);
+                            angles(line,3)=x(t-window);
+                            angles(line,4)=y(t);
+                            angles(line,5)=y(t-window);
+                            angles(line,6)=mean(mean(v((t-window):t)));
+                            if(HYP==0)
+                                angles(line,1)=361;
+                                angles(line,6)=-0.1;
+                            else
+                                if(rad2deg(asin(CAT2/HYP))>=0)
+                                    angles(line,1)= ( rad2deg(acos(CAT1/HYP)));%pre crossing thresh angle
+                                else
+                                    angles(line,1)= 360+(-( rad2deg(acos(CAT1/HYP))));%pre crossing thresh angle
+                                end
+                            end
+                            B(line,1:window)=v(t-(window-1):t);
+                        end
+                        line=line+1;
+                    end
+                end
+            end
+        end
+        ANGLE_ALL(j,i)={angles};
+        if(size(A,1)>1)
+            V(j,i)={mean(A,1)};
+            BASE_V(j,i)={mean(B,1)};
+            V_raw(j,i)={A};
+            BASE_V_raw(j,i)={B};
+            A=[];
+            B=[];
+            pks = mean( V{j,i});
+            Peaks(j,i)={pks};
+            pks_pre = mean( BASE_V{j,i});
+            Peaks_pre(j,i)={pks_pre};
+            Peak_response(j,i)=mean(pks);
+            PRE_Peak_response(j,i)=mean(pks_pre);
+            MeanP(j,i)=(mean(pks)./mean(pks_pre));
+            pks=[];locs=[];w=[];p=[];T=[];
+            pks_pre=[];locs_pre=[];w_pre=[];p_pre=[];T_pre=[];
+            hold on
+        else
+            if(size(A,1)==1)
+                V(j,i)={A};
+                BASE_V(j,i)={B};
+                V_raw(j,i)={A};
+                BASE_V_raw(j,i)={B};
+                A=[];
+                B=[];
+                pks = ( V{j,i});
+                Peaks(j,i)={pks};
+                pks_pre = ( BASE_V{j,i});
+                Peaks_pre(j,i)={pks_pre};
+                Peak_response(j,i)=mean(pks);
+                PRE_Peak_response(j,i)=mean(pks_pre);
+                MeanP(j,i)=(mean(pks)./mean(pks_pre));
+                pks=[];locs=[];w=[];p=[];T=[];
+                pks_pre=[];locs_pre=[];w_pre=[];p_pre=[];T_pre=[];
+                
+                hold on
+            else
+                V(j,i)={-0.1};
+                BASE_V(j,i)={-0.1};
+                V_raw(j,i)={A};
+                BASE_V_raw(j,i)={B};
+                A=[];
+                B=[];
+                pks = ( V{j,i});
+                Peaks(j,i)={pks};
+                pks_pre = ( BASE_V{j,i});
+                Peaks_pre(j,i)={pks_pre};
+                Peak_response(j,i)=(pks);
+                PRE_Peak_response(j,i)=(pks_pre);
+                MeanP(j,i)=((pks)./(pks_pre));
+                pks=[];locs=[];w=[];p=[];T=[];
+                pks_pre=[];locs_pre=[];w_pre=[];p_pre=[];T_pre=[];
+                hold on
+            end
+        end
+    end
+end
+end
+function [ANGLE_ALL,V,V_raw,Peaks,MeanP,BASE_V,BASE_V_raw,PRE_Peak_response,Peak_response]=plot_avoidance_of_shock(V_input,X,Y,info,window,switch_rule,internal_window,variability_threshold,division_in_time,time_block)
+% %%the varianle angles has the following information :
+% angles(line,1) angle of aproaching the midline
+% angles(line,2) x position of encounter of the midline
+% angles(line,3) x position "time_window" frames before meeting the midline
+% angles(line,4) y position of encounter of the midline
+% angles(line,5) y position "time_window" frames before meeting the midline
+% angles(line,6) mean velocity of appraching the midline
+
+% angles(line,7) angle of leaving the midline
+% angles(line,8) x position of encounter of the midline
+% angles(line,9) x position "time_window" frames after meeting the midline
+% angles(line,10) y position of encounter of the midline
+% angles(line,11) y position "time_window" frames after meeting the midline
+% angles(line,12) mean velocity of leaving the midline
+
+for i=1:size(X,2)
+    for j=1:size(X,1)
+        line=1;
+        x=[];y=[];v=[];
+        x=X{j,i};
+       if (j==1 && size(x,2)>28000)%% this is a control for the time division of the session which in our case were 30 min long
+            x=x(27000:end);
+            y=y(27000:end);
+            v=v(27000:end);
+       end
+       x=x(((end/division_in_time)*(time_block-1))+1:((end/division_in_time)*(time_block)));
+        v=V_input{j,i};
+        y=Y{j,i};
+        if( 1~=(strcmp(switch_rule,'NO')))
+            if(j>=switch_rule && size(info,1)==4 )
+                if(isempty(info{4,i}))
+                    tresh=info{3,i}-variability_threshold;
+                else
+                    tresh=info{4,i}-variability_threshold;
+                end
+            else
+                tresh=info{3,i}+variability_threshold;
+                
+            end
+        else
+            tresh=info{3,i}+variability_threshold;
+        end
+        
+        count=window;
+        A=[];
+        B=[];
+        angles=[];
+        for t=window:(max(size(x))-(window+1))
+            if(t>count && t<=(max(size(v))-(window+1)))
+                if( 1~=(strcmp(switch_rule,'NO')))
+                    if(j<switch_rule )
+                        if (x(t)<tresh && x(t-internal_window)>tresh )
+                            count=t+window-1;
+                            A(line,1:window)=v(t:t+window-1);
+                            if(t>window)
+                                HYP=[];CAT1=[];CAT2=[];
+                                CAT1=x(t+window)-x(t);
+                                CAT2=y(t+window)-y(t);
+                                HYP=sqrt(CAT1.^2+CAT2.^2);
+                                angles(line,8)=x(t);
+                                angles(line,9)=x(t+window);
+                                angles(line,10)=y(t);
+                                angles(line,11)=y(t+window);
+                                angles(line,12)=mean(mean(v(t:(t+window))));
+                                if(HYP==0)
+                                    angles(line,7)=361;
+                                    angles(line,12)=-0.1;
+                                else
+                                    if(rad2deg(asin(CAT2/HYP))>=0)
+                                        angles(line,7)= ( rad2deg(acos(CAT1/HYP)));%post crossing thresh angle
+                                    else
+                                        angles(line,7)= 360+(-( rad2deg(acos(CAT1/HYP))));%post crossing thresh angle
+                                    end
+                                end
+                                HYP=[];CAT1=[];CAT2=[];
+                                CAT1=x(t)-x(t-window);
+                                CAT2=y(t)-y(t-window);
+                                HYP=sqrt(CAT1.^2+CAT2.^2);
+                                angles(line,2)=x(t);
+                                angles(line,3)=x(t-window);
+                                angles(line,4)=y(t);
+                                angles(line,5)=y(t-window);
+                                angles(line,6)=mean(mean(v((t-window):t)));
+                                if(HYP==0)
+                                    angles(line,1)=361;
+                                else
+                                    if(rad2deg(asin(CAT2/HYP))>=0)
+                                        angles(line,1)= ( rad2deg(acos(CAT1/HYP)));%pre crossing thresh angle
+                                    else
+                                        angles(line,1)= 360+(-( rad2deg(acos(CAT1/HYP))));%pre crossing thresh angle
+                                    end
+                                end
+                                B(line,1:window)=v(t-(window-1):t);
+                            end
+                            line=line+1;
+                        end
+                    else
+                        if (x(t)>tresh && x(t-internal_window)<tresh )
+                            count=t+window-1;
+                            A(line,1:window)=v(t:t+window-1);
+                            if(t>window)
+                                HYP=[];CAT1=[];CAT2=[];
+                                CAT1=x(t+window)-x(t);
+                                CAT2=y(t+window)-y(t);
+                                HYP=sqrt(CAT1.^2+CAT2.^2);
+                                angles(line,8)=x(t);
+                                angles(line,9)=x(t+window);
+                                angles(line,10)=y(t);
+                                angles(line,11)=y(t+window);
+                                angles(line,12)=mean(mean(v(t:(t+window))));
+                                if(HYP==0)
+                                    angles(line,7)=361;
+                                    angles(line,12)=-0.1;
+                                else
+                                    if(rad2deg(asin(CAT2/HYP))>=0)
+                                        angles(line,7)= ( rad2deg(acos(CAT1/HYP)));%post crossing thresh angle
+                                    else
+                                        angles(line,7)= 360+(-( rad2deg(acos(CAT1/HYP))));%post crossing thresh angle
+                                    end
+                                end
+                                HYP=[];CAT1=[];CAT2=[];
+                                CAT1=x(t)-x(t-window);
+                                CAT2=y(t)-y(t-window);
+                                HYP=sqrt(CAT1.^2+CAT2.^2);
+                                angles(line,2)=x(t);
+                                angles(line,3)=x(t-window);
+                                angles(line,4)=y(t);
+                                angles(line,5)=y(t-window);
+                                angles(line,6)=mean(mean(v((t-window):t)));
+                                if(HYP==0)
+                                    angles(line,1)=361;
+                                    angles(line,6)=-0.1;
+                                else
+                                    if(rad2deg(asin(CAT2/HYP))>=0)
+                                        angles(line,1)= ( rad2deg(acos(CAT1/HYP)));%pre crossing thresh angle
+                                    else
+                                        angles(line,1)= 360+(-( rad2deg(acos(CAT1/HYP))));%pre crossing thresh angle
+                                    end
+                                end
+                                B(line,1:window)=v(t-(window-1):t);
+                            end
+                            line=line+1;
+                        end
+                    end
+                else
+                    if (x(t)<tresh && x(t-internal_window)>tresh)
                         count=t+window-1;
                         A(line,1:window)=v(t:t+window-1);
                         if(t>window )
@@ -1863,16 +2213,825 @@ if nargout > 1
   ll = mu - t;
 end
 end
+function [pdf_vector, pdf_mean, X_vector,Y_vector, D_vector, info_vector, Size_b ,V_vector] = import_data_general(days, month_array, YEAR,user,exp_number, filename, PROTOCOL, blocknum,num_fish_total,roitoloop)
 
-function []=plot_heat_map(pdf_mean,y,x,z)
-
-for i=1:size(pdf_mean,1)
-subplot(z,x,i+(x*(y-1)))
-imagesc(pdf_mean{i,1})
-colormap jet 
-caxis ([0 0.005])
-sum(sum(pdf_mean{i,1}))
-axis off
+pdf_vector=cell(blocknum,num_fish_total);
+pdf_mean=cell(blocknum,1);
+Y_vector=cell(blocknum,num_fish_total);
+D_vector=cell(blocknum,num_fish_total);
+Size_b=zeros(1,num_fish_total);
+num_of_days=1;
+for protocol_number=1:size(PROTOCOL,2)
+if(strcmp(PROTOCOL{protocol_number},'add_day'))
+    num_of_days=num_of_days+1;
 end
+end
+info_vector=cell(4,num_fish_total+1,num_of_days);
+
+info_vector(3,end)={'threshold_first_cond'};
+info_vector(4,end)={'threshold_secodn_cond'};
+
+
+
+line=-1;
+
+for dayloop=1: size(days,2)
+    year=YEAR{dayloop};
+    exp_num=exp_number{dayloop};
+    line=line+1;
+    c=days{dayloop}
+    c_first_day=c;
+    month=month_array{dayloop}
+    User=user{dayloop};
+    i=0;
+    
+
+    for j=roitoloop
+         
+       clearvars xmaxdim;
+        year=YEAR{dayloop};
+    exp_num=exp_number{dayloop};
+    c=days{dayloop}
+    c_first_day=c;
+    month=month_array{dayloop}
+    User=user{dayloop};
+
+        i=i+1;
+        if (strcmp(exp_num,'none'))
+            filename_orig=strcat(filename,year,'-',month,'-',c_first_day,'\',year,'-',month,'-',c);
+        else
+            filename_orig=strcat(filename,year,'-',month,'-',c_first_day,'exp',exp_num,'\',year,'-',month,'-',c)
+        end
+        ROI=num2str(j)
+        conditioning_done=0;
+        baseline_done=0;
+        after_trial_done=0;
+        counter=0;
+        count_days=1;
+        cnew=[];
+        for session=1:size(PROTOCOL,2)
+            session_performed=PROTOCOL{session};
+            if ((strcmp(session_performed,'add_day')))
+                month_new=[];
+                cnew=[];
+                baseline_done=0;conditioning_done=0;after_trial_done=0;
+                count_days=count_days+1
+                
+                
+                if(str2num(c)<9)
+                    if (strcmp(exp_num,'none'))
+                        filename_orig=strcat(filename,year,'-',month,'-',c_first_day,'\',year,'-',month,'-0',num2str(str2num(c)+1));
+                    else
+                        filename_orig=strcat(filename,year,'-',month,'-',c_first_day,'exp',exp_num,'\',year,'-',month,'-0',num2str(str2num(c)+1));
+                    end
+                    if(isempty(cnew))
+                        cnew=num2str(str2num(c)+1);
+                        c=cnew;
+                    end
+                    c=(cnew);
+                else
+                    if((str2num(month)==1 || str2num(month)==3 || str2num(month)==5 ||str2num(month)==7 || str2num(month)==8 || str2num(month)==10) && (str2num(c)==31))
+                        if(str2num(month)<9)
+                            month_new=['0',num2str(str2num(month)+1)];
+                        else
+                            month_new=num2str(str2num(month)+1);
+                        end
+                        cnew='01'; c=cnew;
+                    else
+                        if(str2num(c)==28 &&  str2num(month)==2)
+                            if(str2num(month)<9)
+                                month_new=['0',num2str(str2num(month)+1)];
+                            else
+                                month_new=num2str(str2num(month)+1);
+                            end
+                            cnew='01'; c=cnew;
+                        else
+                            if( str2num(c)==30)
+                                if(str2num(month)<9)
+                                    month_new=['0',num2str(str2num(month)+1)];
+                                else
+                                    month_new=num2str(str2num(month)+1);
+                                end
+                                cnew='01'; c=cnew;
+                            else
+                                if(isempty(month_new))
+                                    month_new=month;
+                                end
+                                if(isempty(cnew))
+                                    cnew=num2str(str2num(c)+1); c=cnew;
+                                end
+                                
+                            end
+                        end
+                    end
+                    if (strcmp(exp_num,'none'))
+                        filename_orig=strcat(filename,year,'-',month,'-',c_first_day,'\',year,'-',month_new,'-',cnew);
+                    else
+                        filename_orig=strcat(filename,year,'-',month,'-',c_first_day,'exp',exp_num,'\',year,'-',month_new,'-',cnew);
+                    end
+                end          
+                baseline_done=0;conditioning_done=0;after_trial_done=0;
+            end
+            if (strcmp(session_performed,'baseline'))
+                baseline_done=baseline_done+1;
+                counter=counter+1;
+                filename1 = strcat(filename_orig,'_',User,'_baseline_exp_',num2str(baseline_done),'_ROI',ROI,'.txt');
+                
+                [Db,Xb,Yb,size_b] = import_baseline_with_size(filename1);
+                if( baseline_done==1 && count_days==1)
+                    info_vector(1,line*6+i,count_days)={importheigth_roi_function(filename1,10,10)};
+                    info_vector(2,line*6+i,count_days)={importwidth_roi_function(filename1,9,9)};
+                    info_vector(1,end,count_days)={'height baseline'};
+                    info_vector(2,end,count_days)={'width baseline'};
+                    X_vector(1,line*6+i)={[]};
+                end
+                 info_vector(1,line*6+i,count_days)={importheigth_roi_function(filename1,10,10)};
+                    info_vector(2,line*6+i,count_days)={importwidth_roi_function(filename1,9,9)};
+                   
+                xmaxdim=max(importwidth_roi_function(filename1,9,9),importheigth_roi_function(filename1,10,10));
+                [xb,yb,dtempb]=equally_spaced_vector(Xb,Yb,Db);
+                sum(dtempb)./60000
+                D_vector(counter,line*6+i)={dtempb};
+                X_vector(counter,line*6+i)={xb};
+                Y_vector(counter,line*6+i)={yb};
+                Size_b(1,line*6+i)=mean(size_b(size_b>0));
+                temp_base=get_PDF(xb',yb',xmaxdim);
+                pdf_vector(counter,line*6+i)={temp_base};
+                xb=[];yb=[];dtempb=[];Db=[];Xb=[];Yb=[];
+                else
+                if(strcmp(session_performed,'conditioning'))
+                    conditioning_done=conditioning_done+1;%exp_num%
+                    filename2 = strcat(filename_orig,'_',User,'_trial_exp_',num2str(conditioning_done),'_ROI',ROI,'.txt');
+                    info_vector(2+conditioning_done,line*6+i,count_days)={importthreshold_function(filename2)};               
+%                     info_vector(3,line*6+i,count_days)={importthreshold_function(filename2)};               
+                    
+[Dt,Xt,Yt,S,size_b] = importtrial_function(filename2);
+       S(S~=2)=1;  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%           
+if((Size_b(1,line*6+i))==0)
+                                        Size_b(1,line*6+i)=mean(size_b(size_b>0));
+                    end
+                    [DT,XT,YT,ST]=detection_multiple_period_conditioning(Dt,Xt,Yt,S);
+                     check=exist('xmaxdim');
+                    if (check)
+                    else
+                          
+                    info_vector(1,line*6+i,count_days)={importheigth_roi_function(filename2,12,12)};
+                    info_vector(2,line*6+i,count_days)={importwidth_roi_function(filename2,13,13)};
+                    info_vector(1,end,count_days)={'height baseline'};
+                    info_vector(2,end,count_days)={'width baseline'};
+                                    xmaxdim=max(importwidth_roi_function(filename2,13,13),importheigth_roi_function(filename2,14,14));
+
+                      end
+                    for counter_block=1:size(DT,2)
+                        
+                        xt1=[];
+                        dtempt1=[];
+                        yt1=[];
+                        temp_t1=[];
+                        [xt1,yt1,dtempt1]=equally_spaced_vector(XT{counter_block},YT{counter_block},DT{counter_block});
+                        if(sum(dtempt1) <= 600000)
+                            DT(counter_block)=[];
+                            XT(counter_block)=[];
+                            YT(counter_block)=[];
+                            ST(counter_block)=[];
+                            
+                            continue
+                        end
+                        
+                        
+                        temp_t1=get_PDF(xt1',yt1',xmaxdim);
+                        pdf_vector(counter_block+counter,line*6+i)={temp_t1};
+                        X_vector(counter_block+counter,line*6+i)={xt1};
+                        Y_vector(counter_block+counter,line*6+i)={yt1};
+                        D_vector(counter_block+counter,line*6+i)={dtempt1};
+                        xt1=[];
+                        dtempt1=[];
+                        yt1=[];
+                        temp_t1=[];
+                        
+                    end
+                    counter=counter+size(DT,2);
+                    DT=[];XT=[];YT=[];ST=[];Dt=[];Xt=[];Yt=[];S=[];
+                    
+                else
+                    if(strcmp(session_performed,'after_trial'))
+                        
+                        after_trial_done=after_trial_done+1;
+                        counter=counter+1;
+                        
+                        filename3 = strcat(filename_orig,'_',User,'_after_trial_exp_',num2str(after_trial_done),'_ROI',ROI,'.txt')
+                        
+                        [Db,Xb,Yb] = importafter_trial_function(filename3);
+                        if(Db(1)<0)
+                            Xb(1)=[];
+                            Yb(1)=[];
+                            Db(1)=[];
+                        end
+                        
+                        if((sum(Db)/60000)<29.5)
+                            Xb=[Xb;Xb(end)];
+                            Yb=[Yb;Yb(end)];
+                            Db=[Db;((29.5)*60000)-(sum(Db))];
+                        end
+                        
+                        [xb,yb,dtempb]=equally_spaced_vector(Xb,Yb,Db);
+                        D_vector(counter,line*6+i)={dtempb};
+                        X_vector(counter,line*6+i)={xb};
+                        Y_vector(counter,line*6+i)={yb};
+                        
+                        temp_base=get_PDF(xb',yb',xmaxdim);
+                        pdf_vector(counter,line*6+i)={temp_base};
+                        xb=[];yb=[];dtempb=[];Db=[];Xb=[];Yb=[];
+                        
+                        
+                    end
+                    
+                end
+                
+            end
+            
+        end
+        
+    end
+    
+end
+% V_vector=get_velocity_new(X_vector,Y_vector,D_vector,info_vector);
+
+V_vector=get_velocity_accurate(X_vector,Y_vector,D_vector,info_vector);
+end
+function [V]=get_velocity_new(X,Y,D,info_vector)
+V=cell (size (D));
+for j=1:size(D,1)
+    
+    for i=1:size(D,2)  
+      
+        tempd= [];
+        tempx= [];
+        tempy= [];
+        tempd= D{j,i};
+        tempx= X{j,i};
+        tempy= Y{j,i};    
+        V(j)={((((tempx(2:end)-tempx(1:end-1)).^2)+((tempy(2:end)-tempy(1:end-1)).^2)).^(0.5))./tempd(1:end-1) };
+        temp_velocity=(((diff(tempx).^2)+(diff(tempy).^2)).^(0.5))./tempd(1:end-1);
+        for t=4:(length(temp_velocity)-3)
+            if(temp_velocity(t)>=0.4)
+                if(temp_velocity(t-3)~=0 | temp_velocity(t+3)~=0 | temp_velocity(t-1)~=0 ||  temp_velocity(t+1)~=0 | temp_velocity(t-2)~=0 |  temp_velocity(t+2)~=0)
+                    temp_velocity(t) =mean(temp_velocity([t-3,t-2,t-1,t+1,t+2,t+3]));%% or NaN??????
+                else
+                    temp_velocity(t) =0;
+                end                 
+            end
+        end
+        V(j,i)={temp_velocity.*(12000/min(info_vector{1:2,i}))};
+    end
+end
+
+end
+
+function [x_test,y_test,d_test] = equally_spaced_vector(x,y,d)
+x_temp=x;
+y_temp=y;
+d_temp=d;
+num=1;
+
+        repetition=1;
+        if(d_temp(1)<70)
+         x_test(num)=x_temp(1);
+                y_test(num)=y_temp(1);
+                d_test(num)=d_temp(1);
+                num=num+1;
+        else
+            repetition=round(d_temp(1)/67);
+                dist_x=(x_temp(2)-x_temp(1));
+                dist_y=(y_temp(2)-y_temp(1));
+                for rep=1:(repetition)
+                    x_test(num)=x_temp(1)+(dist_x/repetition);
+                    y_test(num)=y_temp(1)+(dist_y/repetition);
+                    d_test(num)=(d_temp(1)./repetition);
+                    
+                    num=num+1;
+                end
+        end
+            
+            
+        
+        for k=2:max(size(x_temp))
+           
+            if(d_temp(k)<70)
+                x_test(num)=x_temp(k);
+                y_test(num)=y_temp(k);
+                d_test(num)=d_temp(k);
+                num=num+1;
+            else
+                repetition=round(d_temp(k)/67);
+                dist_x=(x_temp(k)-x_temp(k-1));
+                dist_y=(y_temp(k)-y_temp(k-1));
+                for rep=1:(repetition)
+%                     if(rep<=repetition) 
+                    x_test(num)=x_temp(k-1)+(dist_x/repetition);
+                    y_test(num)=y_temp(k-1)+(dist_y/repetition);
+                    d_test(num)=(d_temp(k)./repetition);
+                    
+                    num=num+1;
+% %                     else
+%                                                 test_time=((d_temp(k)./66).*);
+% 
+%                     if(test_time<d_temp(k))       
+% 
+%                        d_test(num)=(d_temp(k)-test_time);
+%                        num=num+1;
+%                     end
+                end
+            end
+        end
+        [x_temp,y_temp] = remove_pos_spike(x_temp,y_temp);
+
+if(num==1)
+%     y_test=(y);
+% d_test=(d);
+%       x_test=(x);  
+else
+y_test=round(y_test);
+d_test=round(d_test);
+      x_test=round(x_test);  
+end    
+end
+
+function [Da,Xa,Ya] = importafter_trial_function(filename, startRow, endRow)
+%IMPORTFILE Import numeric data from a text file as column vectors.
+%   [DA,XA,YA] = IMPORTFILE(FILENAME) Reads data from text file FILENAME
+%   for the default selection.
+%
+%   [DA,XA,YA] = IMPORTFILE(FILENAME, STARTROW, ENDROW) Reads data from
+%   rows STARTROW through ENDROW of text file FILENAME.
+%
+% Example:
+%   [Da,Xa,Ya] =
+%   importfile('2016-03-11_Fabrizio_after_trial_exp_1_ROI6.txt',14, 38650);
+%
+%    See also TEXTSCAN.
+
+% Auto-generated by MATLAB on 2016/03/14 14:28:03
+
+%% Initialize variables.
+delimiter = {',',':'};
+if nargin<=2
+    startRow = 13;
+    endRow = inf;
+end
+
+%% Format string for each line of text:
+%   column2: double (%f)
+%	column4: double (%f)
+%   column6: double (%f)
+% For more information, see the TEXTSCAN documentation.
+formatSpec = '%*s%f%*s%f%*s%f%*s%*s%*s%[^\n\r]';
+
+%% Open the text file.
+fileID = fopen(filename,'r');
+
+%% Read columns of data according to format string.
+% This call is based on the structure of the file used to generate this
+% code. If an error occurs for a different file, try regenerating the code
+% from the Import Tool.
+textscan(fileID, '%[^\n\r]', startRow(1)-1, 'ReturnOnError', false);
+dataArray = textscan(fileID, formatSpec, endRow(1)-startRow(1)+1, 'Delimiter', delimiter, 'EmptyValue' ,NaN,'ReturnOnError', false);
+for block=2:length(startRow)
+    frewind(fileID);
+    textscan(fileID, '%[^\n\r]', startRow(block)-1, 'ReturnOnError', false);
+    dataArrayBlock = textscan(fileID, formatSpec, endRow(block)-startRow(block)+1, 'Delimiter', delimiter, 'EmptyValue' ,NaN,'ReturnOnError', false);
+    for col=1:length(dataArray)
+        dataArray{col} = [dataArray{col};dataArrayBlock{col}];
+    end
+end
+
+%% Close the text file.
+fclose(fileID);
+
+%% Post processing for unimportable data.
+% No unimportable data rules were applied during the import, so no post
+% processing code is included. To generate code which works for
+% unimportable data, select unimportable cells in a file and regenerate the
+% script.
+
+%% Allocate imported array to column variable names
+D= dataArray{:, 1};
+X = dataArray{:, 2};
+Y = dataArray{:, 3};
+Min_size=min([length(D),length(X),length(Y)]);
+Da = D(1:Min_size);
+Xa = X(1:Min_size);
+Ya = Y(1:Min_size);
+end
+
+function [Dt,Xt,Yt,ST]=detection_multiple_period_conditioning (D,X,Y,S)
+t=1;
+Dt={};Xt={};Yt={};ST={};
+previous=1;
+for j=1:length(X)-1
+
+%     if(S(j)<2 && S(j+1)==2 || S(j)==2 && S(j+1)==3 )
+% if(S(j)<2 && S(j+1)==2 )
+ if(S(j) ~= S(j+1) )
+
+    current=j;
+
+if(sum(D(previous:current))/60000 <(29.9) && D(j+1) > ((29.9*60000)-sum(D(previous:current)) ))
+
+    Dt(t)={[D(previous:current);((29.9*60000)-sum(D(previous:current)))]};
+  Xt(t)={[X(previous:current);X(current)]};
+  Yt(t)={[Y(previous:current);Y(current)]};
+  ST(t)={[S(previous:current);S(current)]};
+       
+D(j+1)=D(j+1)-((29.9*60000)-sum(D(previous:current))); t=t+1;
+previous=j+1;
+else
+  Dt(t)={D(previous:current)};
+  Xt(t)={X(previous:current)};
+  Yt(t)={Y(previous:current)};
+  ST(t)={S(previous:current)};
+        t=t+1;
+previous=j+1;
+end
+    end
+%    if(S(j)==2 && S(j+1)~=2  )
+% current=j;
+% if(sum(D(previous:current))/60000 <(29.9) && D(j+1) > ((29.9*60000)-sum(D(previous:current)) ))
+% 
+%     Dt(t)={[D(previous:current);((29.9*60000)-sum(D(previous:current)))]};
+%   Xt(t)={[X(previous:current);X(current)]};
+%   Yt(t)={[Y(previous:current);Y(current)]};
+%   ST(t)={[S(previous:current);S(current)]};
+%        
+% D(j+1)=D(j+1)-((29.9*60000)-sum(D(previous:current))); t=t+1;
+% previous=j+1;
+% else
+% 
+%   Dt(t)={D(previous:current)};
+%   Xt(t)={X(previous:current)};
+%   Yt(t)={Y(previous:current)};
+%   ST(t)={S(previous:current)};
+%         t=t+1;
+% previous=j+1;
+% 
+% end
+%    end
+if(j==(length(X)-1) && previous < (length(X)-1) )
+current=j+1;
+
+  if((current-previous )> 150)
+ Dt(t)={D(previous:current)};
+  Xt(t)={X(previous:current)};
+  Yt(t)={Y(previous:current)};
+  ST(t)={S(previous:current)};
+  end
+end
+
+end
+
+end
+
+function [Dt, Xt, Yt, S, size_b] = importtrial_function(filename, dataLines)
+%IMPORTFILE Import data from a text file
+%  [DT, XT, YT, S, SIZE_B] = IMPORTFILE(FILENAME) reads data from text
+%  file FILENAME for the default selection.  Returns the data as column
+%  vectors.
+%
+%  [DT, XT, YT, S, SIZE_B] = IMPORTFILE(FILE, DATALINES) reads data for
+%  the specified row interval(s) of text file FILENAME. Specify
+%  DATALINES as a positive scalar integer or a N-by-2 array of positive
+%  scalar integers for dis-contiguous row intervals.
+%
+%  Example:
+%  [Dt, Xt, Yt, S, size_b] = importfile("\\forskning.it.ntnu.no\ntnu\mh-kin\yaksi2\bramse\Behavioural_experiments\New_extinction_paradigm\2020-03-06\2020-03-06_Bram_trial_exp_1_ROI5.txt", [18, Inf]);
+%
+%  See also READTABLE.
+%
+% Auto-generated by MATLAB on 13-Mar-2020 11:09:05
+
+%% Input handling
+
+% If dataLines is not specified, define defaults
+if nargin < 2
+    dataLines = [18, Inf];
+end
+
+%% Setup the Import Options
+opts = delimitedTextImportOptions("NumVariables", 10);
+
+% Specify range and delimiter
+opts.DataLines = dataLines;
+opts.Delimiter = [",", ":"];
+
+% Specify column names and types
+opts.VariableNames = ["Var1", "Dt", "Var3", "Xt", "Var5", "Yt", "Var7", "S", "Var9", "size_b"];
+opts.SelectedVariableNames = ["Dt", "Xt", "Yt", "S", "size_b"];
+opts.VariableTypes = ["string", "double", "string", "double", "string", "double", "string", "double", "string", "double"];
+opts = setvaropts(opts, [1, 3, 5, 7, 9], "WhitespaceRule", "preserve");
+opts = setvaropts(opts, [1, 3, 5, 7, 9], "EmptyFieldRule", "auto");
+opts.ExtraColumnsRule = "ignore";
+opts.EmptyLineRule = "read";
+
+% Import the data
+tbl = readtable(filename, opts);
+
+%% Convert to output type
+Dt = tbl.Dt;
+Xt = tbl.Xt;
+Yt = tbl.Yt;
+S = tbl.S;
+size_b = tbl.size_b;
+end
+
+function delta = importthreshold_function(filename, startRow, endRow)
+%IMPORTFILE Import numeric data from a text file as column vectors.
+%   DELTA = IMPORTFILE(FILENAME) Reads data from text file FILENAME for the
+%   default selection.
+%
+%   DELTA = IMPORTFILE(FILENAME, STARTROW, ENDROW) Reads data from rows
+%   STARTROW through ENDROW of text file FILENAME.
+%
+% Example:
+%   delta = importfile('2016-03-11_Fabrizio_trial_exp_1_ROI1.txt',15, 15);
+%
+%    See also TEXTSCAN.
+
+% Auto-generated by MATLAB on 2016/03/14 14:26:40
+
+%% Initialize variables.
+delimiter = {',',':'};
+if nargin<=2
+    startRow = 15;
+    endRow = 15;
+end
+
+%% Format string for each line of text:
+%   column1: double (%f)
+% For more information, see the TEXTSCAN documentation.
+formatSpec = '%f%*s%*s%*s%*s%*s%*s%*s%*s%[^\n\r]';
+
+%% Open the text file.
+fileID = fopen(filename,'r');
+
+%% Read columns of data according to format string.
+% This call is based on the structure of the file used to generate this
+% code. If an error occurs for a different file, try regenerating the code
+% from the Import Tool.
+textscan(fileID, '%[^\n\r]', startRow(1)-1, 'ReturnOnError', false);
+dataArray = textscan(fileID, formatSpec, endRow(1)-startRow(1)+1, 'Delimiter', delimiter, 'ReturnOnError', false);
+for block=2:length(startRow)
+    frewind(fileID);
+    textscan(fileID, '%[^\n\r]', startRow(block)-1, 'ReturnOnError', false);
+    dataArrayBlock = textscan(fileID, formatSpec, endRow(block)-startRow(block)+1, 'Delimiter', delimiter, 'ReturnOnError', false);
+    dataArray{1} = [dataArray{1};dataArrayBlock{1}];
+end
+
+%% Close the text file.
+fclose(fileID);
+
+%% Post processing for unimportable data.
+% No unimportable data rules were applied during the import, so no post
+% processing code is included. To generate code which works for
+% unimportable data, select unimportable cells in a file and regenerate the
+% script.
+
+%% Allocate imported array to column variable names
+delta = dataArray{:, 1};
+end
+
+function [Db,Xb,Yb,Size_b] = import_baseline_with_size(filename, startRow, endRow)
+%IMPORTFILE Import numeric data from a text file as column vectors.
+%   [DB,XB,YB,SIZE_B] = IMPORTFILE(FILENAME) Reads data from text file
+%   FILENAME for the default selection.
+%
+%   [DB,XB,YB,SIZE_B] = IMPORTFILE(FILENAME, STARTROW, ENDROW) Reads data
+%   from rows STARTROW through ENDROW of text file FILENAME.
+%
+% Example:
+%   [Db,Xb,Yb,Size_b] = importfile('2017-11-23_Fabrizio_baseline_exp_1_ROI2.txt',14, 23133);
+%
+%    See also TEXTSCAN.
+
+% Auto-generated by MATLAB on 2017/12/05 14:19:04
+
+%% Initialize variables.
+delimiter = {',',' ',':'};
+if nargin<=2
+    startRow = 14;
+    endRow = inf;
+end
+
+%% Format string for each line of text:
+%   column2: double (%f)
+%	column4: double (%f)
+%   column6: double (%f)
+%	column8: double (%f)
+% For more information, see the TEXTSCAN documentation.
+formatSpec = '%*s%f%*s%f%*s%f%*s%f%*s%[^\n\r]';
+
+%% Open the text file.
+fileID = fopen(filename,'r');
+
+%% Read columns of data according to format string.
+% This call is based on the structure of the file used to generate this
+% code. If an error occurs for a different file, try regenerating the code
+% from the Import Tool.
+textscan(fileID, '%[^\n\r]', startRow(1)-1, 'WhiteSpace', '', 'ReturnOnError', false);
+dataArray = textscan(fileID, formatSpec, endRow(1)-startRow(1)+1, 'Delimiter', delimiter, 'EmptyValue' ,NaN,'ReturnOnError', false);
+for block=2:length(startRow)
+    frewind(fileID);
+    textscan(fileID, '%[^\n\r]', startRow(block)-1, 'WhiteSpace', '', 'ReturnOnError', false);
+    dataArrayBlock = textscan(fileID, formatSpec, endRow(block)-startRow(block)+1, 'Delimiter', delimiter, 'EmptyValue' ,NaN,'ReturnOnError', false);
+    for col=1:length(dataArray)
+        dataArray{col} = [dataArray{col};dataArrayBlock{col}];
+    end
+end
+
+%% Close the text file.
+fclose(fileID);
+
+%% Post processing for unimportable data.
+% No unimportable data rules were applied during the import, so no post
+% processing code is included. To generate code which works for
+% unimportable data, select unimportable cells in a file and regenerate the
+% script.
+
+%% Allocate imported array to column variable names
+Db = dataArray{:, 1};
+Xb = dataArray{:, 2};
+Yb = dataArray{:, 3};
+Size_b = dataArray{:, 4};
+end
+
+function Dt = importheigth_roi_function(filename, startRow, endRow)
+%IMPORTFILE Import numeric data from a text file as column vectors.
+%   DT = IMPORTFILE(FILENAME) Reads data from text file FILENAME for the
+%   default selection.
+%
+%   DT = IMPORTFILE(FILENAME, STARTROW, ENDROW) Reads data from rows
+%   STARTROW through ENDROW of text file FILENAME.
+%
+% Example:
+%   Dt = importfile('2016-03-11_Fabrizio_trial_exp_1_ROI1.txt',13, 13);
+%
+%    See also TEXTSCAN.
+
+% Auto-generated by MATLAB on 2016/03/14 14:26:10
+
+%% Initialize variables.
+delimiter = {',',':'};
+if nargin<=2
+    startRow = 13;
+    endRow = 13;
+end
+
+%% Format string for each line of text:
+%   column2: double (%f)
+% For more information, see the TEXTSCAN documentation.
+formatSpec = '%*s%f%*s%*s%*s%*s%*s%*s%*s%[^\n\r]';
+
+%% Open the text file.
+fileID = fopen(filename,'r');
+
+%% Read columns of data according to format string.
+% This call is based on the structure of the file used to generate this
+% code. If an error occurs for a different file, try regenerating the code
+% from the Import Tool.
+textscan(fileID, '%[^\n\r]', startRow(1)-1, 'ReturnOnError', false);
+dataArray = textscan(fileID, formatSpec, endRow(1)-startRow(1)+1, 'Delimiter', delimiter, 'ReturnOnError', false);
+for block=2:length(startRow)
+    frewind(fileID);
+    textscan(fileID, '%[^\n\r]', startRow(block)-1, 'ReturnOnError', false);
+    dataArrayBlock = textscan(fileID, formatSpec, endRow(block)-startRow(block)+1, 'Delimiter', delimiter, 'ReturnOnError', false);
+    dataArray{1} = [dataArray{1};dataArrayBlock{1}];
+end
+
+%% Close the text file.
+fclose(fileID);
+
+%% Post processing for unimportable data.
+% No unimportable data rules were applied during the import, so no post
+% processing code is included. To generate code which works for
+% unimportable data, select unimportable cells in a file and regenerate the
+% script.
+
+%% Allocate imported array to column variable names
+Dt = dataArray{:, 1};
+
+end
+
+function Dt = importwidth_roi_function(filename, startRow, endRow)
+%IMPORTFILE Import numeric data from a text file as column vectors.
+%   DT = IMPORTFILE(FILENAME) Reads data from text file FILENAME for the
+%   default selection.
+%
+%   DT = IMPORTFILE(FILENAME, STARTROW, ENDROW) Reads data from rows
+%   STARTROW through ENDROW of text file FILENAME.
+%
+% Example:
+%   Dt = importfile('2016-03-11_Fabrizio_trial_exp_1_ROI1.txt',12, 12);
+%
+%    See also TEXTSCAN.
+
+% Auto-generated by MATLAB on 2016/03/14 14:25:35
+
+%% Initialize variables.
+delimiter = {',',':'};
+if nargin<=2
+    startRow = 12;
+    endRow = 12;
+end
+
+%% Format string for each line of text:
+%   column2: double (%f)
+% For more information, see the TEXTSCAN documentation.
+formatSpec = '%*s%f%*s%*s%*s%*s%*s%*s%*s%[^\n\r]';
+
+%% Open the text file.
+fileID = fopen(filename,'r');
+
+%% Read columns of data according to format string.
+% This call is based on the structure of the file used to generate this
+% code. If an error occurs for a different file, try regenerating the code
+% from the Import Tool.
+textscan(fileID, '%[^\n\r]', startRow(1)-1, 'ReturnOnError', false);
+dataArray = textscan(fileID, formatSpec, endRow(1)-startRow(1)+1, 'Delimiter', delimiter, 'ReturnOnError', false);
+for block=2:length(startRow)
+    frewind(fileID);
+    textscan(fileID, '%[^\n\r]', startRow(block)-1, 'ReturnOnError', false);
+    dataArrayBlock = textscan(fileID, formatSpec, endRow(block)-startRow(block)+1, 'Delimiter', delimiter, 'ReturnOnError', false);
+    dataArray{1} = [dataArray{1};dataArrayBlock{1}];
+end
+
+%% Close the text file.
+fclose(fileID);
+
+%% Post processing for unimportable data.
+% No unimportable data rules were applied during the import, so no post
+% processing code is included. To generate code which works for
+% unimportable data, select unimportable cells in a file and regenerate the
+% script.
+
+%% Allocate imported array to column variable names
+Dt = dataArray{:, 1};
+
+end
+
+function [x_test,y_test] = remove_pos_spike(X,Y)
+pix_lim=100;
+        repetition=1;
+        x_test=X;%(1);
+        y_test=Y;%(1);
+        
+        for j=2:(max(size(X))-4)
+        
+% if(j==1079)
+% ra=2
+% end
+           d_uno=((((X(j)-X(j-1)).^2)+((Y(j)-Y(j-1)).^2)).^0.5); 
+           d_due=((((X(j+1)-X(j-1)).^2)+((Y(j+1)-Y(j-1)).^2)).^0.5);
+                      d_tre=((((X(j+2)-X(j-1)).^2)+((Y(j+2)-Y(j-1)).^2)).^0.5);
+           d_quattro=((((X(j+3)-X(j-1)).^2)+((Y(j+3)-Y(j-1)).^2)).^0.5);
+           d_cinque=((((X(j+4)-X(j-1)).^2)+((Y(j+4)-Y(j-1)).^2)).^0.5);
+
+           if( d_uno > pix_lim && d_due < pix_lim  ) %
+               x_test(j)= X (j-1)+ (X(j+1)-X(j-1))/2  ;
+               y_test(j)= Y (j-1)+ (Y(j+1)-Y(j-1))/2  ;
+           else
+               if( d_uno > pix_lim && d_due > pix_lim && d_tre < pix_lim ) %
+                   x_test(j)= X (j-1)+ (X(j+2)-X(j-1))/3  ;
+                   y_test(j)= Y (j-1)+ (Y(j+2)-Y(j-1))/3  ;
+                   x_test(j+1)= X (j-1)+ 2*((X(j+2)-X(j-1))/3)  ;
+                   y_test(j+1)= Y (j-1)+ 2*((Y(j+2)-Y(j-1))/3 );
+               else
+                   if( d_uno > pix_lim && d_due > pix_lim && d_tre >pix_lim && d_quattro < pix_lim) %
+                       x_test(j)= X (j-1)+ (X(j+3)-X(j-1))/4  ;
+                       y_test(j)= Y (j-1)+ (Y(j+3)-Y(j-1))/4  ;
+                       x_test(j+1)= X (j-1)+ 2*((X(j+3)-X(j-1))/4)  ;
+                       y_test(j+1)= Y (j-1)+ 2*((Y(j+3)-Y(j-1))/4 );
+                       x_test(j+2)= X (j-1)+ 3*((X(j+3)-X(j-1))/4)  ;
+                       y_test(j+2)= Y (j-1)+ 3*((Y(j+3)-Y(j-1))/4 );
+                   else
+                       if( d_uno > pix_lim && d_due > pix_lim && d_tre >pix_lim && d_quattro > pix_lim && d_cinque < pix_lim) %
+                           x_test(j)= X (j-1)+ (X(j+4)-X(j-1))/5  ;
+                           y_test(j)= Y (j-1)+ (Y(j+4)-Y(j-1))/5  ;
+                           x_test(j+1)= X (j-1)+ 2*((X(j+4)-X(j-1))/5)  ;
+                           y_test(j+1)= Y (j-1)+ 2*((Y(j+4)-Y(j-1))/5 );
+                           x_test(j+2)= X (j-1)+ 3*((X(j+4)-X(j-1))/5)  ;
+                           y_test(j+2)= Y (j-1)+ 3*((Y(j+4)-Y(j-1))/5 );
+                           x_test(j+3)= X (j-1)+ 4*((X(j+4)-X(j-1))/5)  ;
+                           y_test(j+3)= Y (j-1)+ 4*((Y(j+4)-Y(j-1))/5 );
+                       end
+                   end
+               end
+           end
+% 
+% else
+%                x_test(j)=X(j);
+%                y_test(j)=Y(j);
+%            end
+        end
+%         x_test(max(size(X)))=X(max(size(X)));
+%         y_test(max(size(X)))=Y(max(size(X)));
 
 end
