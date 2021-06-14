@@ -34,7 +34,7 @@ V(1,gr)={V_vector(:,animal_to_select)};
 end
 
 %%
-time_window=30; %in minutes
+time_window=5; %in minutes
 min_size_bin=100;%%min number of frames in a time bin (use usually half the frames in a timebin)
 for gr=1:max(size(X))
 X_vector=[];Y_vector=[];D_vector=[];info_vector=[];V_vector=[];V_vector=V{1,gr};
@@ -43,8 +43,8 @@ X_vector=X{1,gr};Y_vector=Y{1,gr};D_vector=D{1,gr};info_vector=info{1,gr};
 end
 %%
 figure();
-titles=["average_time of entrance","number of entrance","v of entrance"];
-baseline_shift=6;%the first 5 bins of baseline are negletted
+titles=["average time of entrance","number of entrance","v of entrance"];
+baseline_shift=6;%the first 5 bins of baseline are negletted, check the time_window (those multiplied gives time deleted)
 baseline_bins=baseline_shift+[1:6];%i am using a 5 min binn and selection only the last 30 min of the baseline 
 for gr=1:max(size(X))
    P=[];H=[];
@@ -169,11 +169,10 @@ fig1=figure();name_fig1=[];name_fig1=['binned velocity plot individuals'];
 fig2=figure();name_fig2=[];name_fig2=['binned velocity plot all'];
 fig3=figure();name_fig3=[];name_fig3=['total distance swimmed'];
 fig4=figure();name_fig4=[];name_fig4=['freezing'];
-fig5=figure();
+fig5=figure();name_fig5=[];name_fig5=['individual animal dist in red'];
 fig6=figure(); 
 fig7=figure();
-fig10=figure();
-fig12=figure();
+fig10=figure();name_fig10=[];name_fig10=['animal dist in red [cm] or ratio from baseline'];
 sec_to_freez=2;dist_to_freez=2;
 for gr=1:max(size(X))
     X_vector=[];Y_vector=[]; D_vector=[]; info_vector=[]; V_vector=[];
@@ -203,7 +202,7 @@ for gr=1:max(size(X))
     figure(fig10)
     shadedErrorBar(1:size(mean_binned1,2),mean_binned1(1,:),mean_binned1(2,:),'lineprops',colour{gr}, 'patchSaturation', 0.2);hold on; plot_boundary(M , [0, 2]);hold on;ylim([0 2])
     hold on
-    title('plot animal dist in red [cm] or ratio from baseline')
+    title('animal dist in red [cm] or ratio from baseline')
     D_ratio=[];D_ratio=Distance_ratio{gr};
     figure(fig7)
     shadedErrorBar(1:size(Distance1,1),mean(Distance1,2),std(Distance1,0,2)./sqrt(size(Distance1,2)),'lineprops',colour{gr}, 'patchSaturation', 0.6);
@@ -268,8 +267,6 @@ name=[];name='total dist swimmed';figure(fig7);title(name)
 saveas(fig7,[filename,'figures\',name,'.fig']);saveas(fig7,[filename,'figures\',name,'.tif']);saveas(fig7,[filename,'figures\',name,'.svg']);
 name=[];name=name_fig10;figure(fig10);title(name)
 saveas(fig10,[filename,'figures\',name,'.fig']);saveas(fig10,[filename,'figures\',name,'.tif']);saveas(fig10,[filename,'figures\',name,'.svg']);
-name=[];name=name_fig11;figure(fig11);title(name)
-saveas(fig11,[filename,'figures\',name,'.fig']);saveas(fig11,[filename,'figures\',name,'.tif']);saveas(fig11,[filename,'figures\',name,'.svg']);
 
 %%
 fig1=figure();
@@ -312,7 +309,7 @@ end
 end
 
 %%
-%%we now calculate the response of the animal to the stimulation
+%%we now calculate the response of the animal to the stimulation only 
 days_num=1;%you can perform it for multiple days experiments if that is the case
 division_in_time=1;%set the number of windows in which you want to divide your protocol sessions
 for windows_to_analyze=1:division_in_time
